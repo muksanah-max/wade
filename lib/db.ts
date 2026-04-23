@@ -3,6 +3,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { nanoid } from "nanoid";
 import type { FormulaRecord, FormulaStep, GenerationRecord, Script, StoryFrame } from "./schemas";
+import { SEED_FORMULAS } from "./seed-formulas";
 
 const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), "data", "app.db");
 
@@ -51,8 +52,36 @@ function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_generations_created ON generations(created_at DESC);
   `);
 
+  seedIfEmpty(db);
+
   dbInstance = db;
   return db;
+}
+
+function seedIfEmpty(db: Database.Database) {
+  const row = db.prepare("SELECT COUNT(*) AS n FROM formulas").get() as { n: number };
+  if (row.n > 0) return;
+
+  const insert = db.prepare(
+    `INSERT INTO formulas (id, name, description, structure_json, tags_json, source_ref_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, NULL, ?, ?)`,
+  );
+  const now = Date.now();
+  const tx = db.transaction((items: typeof SEED_FORMULAS) => {
+    for (const f of items) {
+      insert.run(
+        nanoid(12),
+        f.name,
+        f.description,
+        JSON.stringify(f.structure),
+        JSON.stringify(f.tags),
+        now,
+        now,
+      );
+    }
+  });
+  tx(SEED_FORMULAS);
+  console.log(`[db] seeded ${SEED_FORMULAS.length} built-in formulas`);
 }
 
 function rowToFormula(row: any): FormulaRecord {
