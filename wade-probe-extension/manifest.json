@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Wade Probe",
+  "version": "0.1.0",
+  "description": "在抖音 / TikTok 视频页一键抓取元数据 + 统计数据，用于验证爬取可行性",
+  "permissions": ["clipboardWrite"],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.douyin.com/*",
+        "https://v.douyin.com/*",
+        "https://creator.douyin.com/*",
+        "https://www.tiktok.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
